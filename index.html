@@ -286,7 +286,7 @@
 </head>
 <body>
 
-<h1>Higher or Lower: Top University Earnings</h1>
+<h1>Higher or Lower: Top University Salaries</h1>
 <p class="subtitle">Think you can organize the top earners on Princeton's payroll in 2024?</p>
 
 <div class="main-game" id="mainGame">
@@ -335,12 +335,12 @@ const DATA = [
   { name: "Hilary Parker", title: "Vice President and Secretary", value: 561040, unit: "dollars", display: "561,040" },
   { name: "James Dominick", title: "VP for info. tech. and CIO", value: 664340, unit: "dollars", display: "664,340" },
   { name: "James Matteo", title: "VP for finance and treasurer", value: 721854, unit: "dollars", display: "721,854" },
-  { name: "Jennifer Rexford", title: "Provost", value: 951958, unit: "dollars", display: "946,958" },
+  { name: "Jennifer Rexford", title: "Provost", value: 946958, unit: "dollars", display: "946,958" },
   { name: "Kevin Heaney", title: "VP for advancement", value: 847178, unit: "dollars", display: "847,178" },
   { name: "KyuJung Whang", title: "VP for facilities", value: 616945, unit: "dollars", display: "616,945" },
   { name: "Nilufer Shroff", title: "VP and chief audit and compliance officer", value: 522354, unit: "dollars", display: "522,354" },
   { name: "Ramona Romero", title: "VP and general counsel", value: 967614, unit: "dollars", display: "967,614" },
-  { name: "Romy Riddick", title: "VP for human resources", value: 531196, unit: "dollars", display: "531,196" },
+  { name: "Romy Riddick", title: "VP for Human Resources", value: 531196, unit: "dollars", display: "531,196" },
   { name: "W Rochelle Calhoun", title: "VP for campus life", value: 641804, unit: "dollars", display: "641,804" },
   { name: "Gene Andrew Jarrett", title: "Dean of the Faculty", value: 825491, unit: "dollars", display: "825,491" },
   { name: "Jill Dolan", title: "Dean of the College", value: 573088, unit: "dollars", display: "573,088" },
@@ -350,7 +350,7 @@ const DATA = [
   { name: "Charlotte Treby Williams", title: "Former executive VP", value: 889305, unit: "dollars", display: "889,305" },
   { name: "Deborah Prentice", title: "Former Provost", value: 263615, unit: "dollars", display: "263,615" },
   { name: "Lianne Sullivan-Crowley", title: "Former VP for human resources, Emeritus", value: 274309, unit: "dollars", display: "274,309" },
-  { name: "Sanjeev Kulkarni", title: "Professor, Former Dean of the Faculty", value: 727363, unit: "dollars", display: "726,363" },
+  { name: "Sanjeev Kulkarni", title: "Professor, Former Dean of the Faculty", value: 726363, unit: "dollars", display: "726,363" },
   { name: "Sarah-Jane Leslie", title: "Professor, Former Dean of the Graduate School", value: 690658, unit: "dollars", display: "690,658" },
 ];
 
@@ -361,7 +361,6 @@ let knownSide = null;
 let score = 0;
 let best = 0;
 let revealed = false;
-let isFirstTurn = true;
 let usedNames = new Set();
 let shuffled;
 
@@ -416,11 +415,16 @@ function startGame() {
     const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
     [shuffled[goldenIndex], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[goldenIndex]];
   }
+  const grubIndex = shuffled.findIndex(d => d.name === "Christopher L. Eisgruber");
+  const lastFiveStart = shuffled.length - 5;
+  if (grubIndex < lastFiveStart) {
+    const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
+    [shuffled[grubIndex], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[grubIndex]];
+
 
   score = 0;
   usedNames = new Set();
   revealed = false;
-  isFirstTurn = true;
   knownSide = null;
 
   document.getElementById('endScreen').classList.remove('visible');
@@ -472,7 +476,7 @@ function renderCards(isSwap, swapSide) {
   document.getElementById('rightName').textContent = items[1].name;
   document.getElementById('rightTitle').textContent = items[1].title || '';
 
-  if (isFirstTurn) {
+  if (knownSide === null) {
     leftCard.className = 'card';
     rightCard.className = 'card';
     document.getElementById('leftLabel').textContent = 'Higher or Lower?';
@@ -509,59 +513,41 @@ function guess(side) {
   if (revealed) return;
   revealed = true;
 
-  const guessedItem = side === 'left' ? items[0] : items[1];
+  const leftItem = items[0];
+  const rightItem = items[1];
+  const guessedItem = side === 'left' ? leftItem : rightItem;
+  const otherItem = side === 'left' ? rightItem : leftItem;
   const otherSide = side === 'left' ? 'right' : 'left';
 
   const guessedCard = document.getElementById('card' + cap(side));
   const otherCard = document.getElementById('card' + cap(otherSide));
 
-  if (isFirstTurn) {
-    revealCard('left', items[0], 0);
-    revealCard('right', items[1], 100);
-
-    guessedCard.className = 'card locked revealed correct';
-    otherCard.className = 'card locked revealed';
-
-    isFirstTurn = false;
-    knownSide = side;
-
-    setTimeout(() => {
-      const next = pickUnused();
-      if (!next) { endGame(true); return; }
-      items[otherSide === 'left' ? 0 : 1] = next;
-      usedNames.add(next.name);
-      revealed = false;
-      renderCards(true, otherSide);
-    }, 3000);
-   return;
-  }
-
-  // Always reveal the clicked card with count animation
-  revealCard(side, guessedItem, 0);
-  // Also reveal the other card statically if it wasn't already showing (i.e. it's the unknown card)
-  if (side !== knownSide) {
-    // other card is the known one — already showing, nothing to do
+  // First click: both cards blank, reveal both with animation then score
+  if (knownSide === null) {
+    revealCard('left', leftItem, 0);
+    revealCard('right', rightItem, 100);
   } else {
-    // clicked the known card — reveal the unknown card too
-    const otherItem = otherSide === 'left' ? items[0] : items[1];
-    revealCard(otherSide, otherItem, 0);
+    // Reveal clicked card; if it's the known card, reveal the other too
+    revealCard(side, guessedItem, 0);
+    if (side === knownSide) {
+      revealCard(otherSide, otherItem, 0);
+    }
   }
 
-  const knownItem = knownSide === 'left' ? items[0] : items[1];
-  const newSide = knownSide === 'left' ? 'right' : 'left';
-
-  const correct = guessedItem.value >= (side === knownSide ? (items[newSide === 'left' ? 0 : 1]).value : knownItem.value);
+  const correct = guessedItem.value >= otherItem.value;
 
   guessedCard.className = 'card locked revealed ' + (correct ? 'correct' : 'wrong');
   otherCard.className = 'card locked revealed ' + (correct ? '' : 'wrong');
 
   if (correct) {
-    knownSide = side; // clicked card becomes the new anchor
-
+    score++;
+    if (score > best) best = score;
+    updateScoreDisplay();
+    markDot(score - 1, true);
+    knownSide = side;
     setTimeout(() => {
       const next = pickUnused();
       if (!next) { endGame(true); return; }
-      // Always replace the card that was NOT clicked
       items[otherSide === 'left' ? 0 : 1] = next;
       usedNames.add(next.name);
       revealed = false;
