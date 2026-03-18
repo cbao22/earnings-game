@@ -423,6 +423,16 @@ function startGame() {
     }
   });
 
+  // Force the first card to be near the median value
+  const sorted = [...DATA].sort((a, b) => a.value - b.value);
+  const medianStart = Math.floor(sorted.length / 2) - 2;
+  const medianEnd = Math.floor(sorted.length / 2) + 2;
+  const medianPool = sorted.slice(medianStart, medianEnd + 1).map(d => d.name);
+  const firstIdx = shuffled.findIndex(d => medianPool.includes(d.name));
+  if (firstIdx > 0) {
+    [shuffled[0], shuffled[firstIdx]] = [shuffled[firstIdx], shuffled[0]];
+  }
+
   score = 0;
   usedNames = new Set();
   revealed = false;
