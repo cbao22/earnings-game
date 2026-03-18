@@ -413,26 +413,24 @@ function revealCard(side, item, delay) {
 function startGame() {
   shuffled = shuffle(DATA);
 
-  const sorted = [...DATA].sort((a, b) => a.value - b.value);
-  const median = sorted[Math.floor(sorted.length / 2)].value;
-  const maxDist = Math.max(...DATA.map(d => Math.abs(d.value - median)));
   const hardLast = ['Andrew Golden', 'Christopher L. Eisgruber'];
+  const rest = DATA.filter(d => !hardLast.includes(d.name));
+  const sortedByDist = [...rest].sort((a, b) => a.value - b.value);
+  const median = sortedByDist[Math.floor(sortedByDist.length / 2)].value;
+  const maxDist = Math.max(...rest.map(d => Math.abs(d.value - median)));
 
-  // Assign each non-hard-pinned item a score: closer to median = lower score (appears earlier)
-  // Add randomness so it's not identical every game
-  const scoreable = shuffled.filter(d => !hardLast.includes(d.name));
-  scoreable.sort((a, b) => {
-    const distA = Math.abs(a.value - median) / maxDist; // 0 = at median, 1 = furthest
-    const distB = Math.abs(b.value - median) / maxDist;
-    const scoreA = distA + Math.random() * 0.4; // randomness band of 0.4
-    const scoreB = distB + Math.random() * 0.4;
-    return scoreA - scoreB;
-  });
-
-  // Rebuild shuffled: scored items first, then hard-pinned at the end in random order
+  // Split into 3 tiers by distance from median, then order: close first, far last
+  const tier1 = rest.filter(d => Math.abs(d.value - median) / maxDist <= 0.33);
+  const tier2 = rest.filter(d => Math.abs(d.value - median) / maxDist > 0.33 && Math.abs(d.value - median) / maxDist <= 0.66);
+  const tier3 = rest.filter(d => Math.abs(d.value - median) / maxDist > 0.66);
   const hardItems = hardLast.map(name => DATA.find(d => d.name === name));
-  const pinnedShuffled = [...hardItems].sort(() => Math.random() - 0.5);
-  shuffled = [...scoreable, ...pinnedShuffled];
+
+  shuffled = [
+    ...shuffle(tier1),
+    ...shuffle(tier2),
+    ...shuffle(tier3),
+    ...shuffle(hardItems),
+  ];
 
   score = 0;
   usedNames = new Set();
