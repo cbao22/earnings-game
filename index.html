@@ -286,7 +286,7 @@
 </head>
 <body>
 
-<h1>Higher or Lower: Top University Salaries</h1>
+<h1>Higher or Lower: Top University Earnings</h1>
 <p class="subtitle">Think you can organize the top earners on Princeton's payroll in 2024?</p>
 
 <div class="main-game" id="mainGame">
@@ -347,6 +347,11 @@ const DATA = [
   { name: "Pablo Debenedetti", title: "Dean for Research", value: 598020, unit: "dollars", display: "598,020" },
   { name: "Peter Schiffer", title: "Dean for Research", value: 214546, unit: "dollars", display: "214,546" },
   { name: "Rodney Priestley", title: "Dean of the Graduate School", value: 588002, unit: "dollars", display: "588,002" },
+  { name: "Edward Karns", title: "Managing director of PRINCO", value: 2482468, unit: "dollars", display: "2,482,468" },
+  { name: "Jennifer Birmingham", title: "Managing director of PRINCO", value: 2375438, unit: "dollars", display: "2,375,438" },
+  { name: "Jonathan Erickson", title: "Managing director of PRINCO", value: 3385143, unit: "dollars", display: "3,385,143" },
+  { name: "Susan Butler Ciniglio", title: "Managing director of PRINCO", value: 2100130, unit: "dollars", display: "2,100,130" },
+  { name: "Tae Kyoon Kim", title: "Managing director of PRINCO", value: 2604473, unit: "dollars", display: "2,604,473" },
   { name: "Charlotte Treby Williams", title: "Former executive VP", value: 889305, unit: "dollars", display: "889,305" },
   { name: "Deborah Prentice", title: "Former Provost", value: 263615, unit: "dollars", display: "263,615" },
   { name: "Lianne Sullivan-Crowley", title: "Former VP for human resources, Emeritus", value: 274309, unit: "dollars", display: "274,309" },
@@ -408,19 +413,15 @@ function revealCard(side, item, delay) {
 function startGame() {
   shuffled = shuffle(DATA);
 
-  // Ensure Andrew Golden appears in the last 5 positions
-  const goldenIndex = shuffled.findIndex(d => d.name === "Andrew Golden");
+  // Ensure Andrew Golden and Eisgruber appear in the last 5 positions
   const lastFiveStart = shuffled.length - 5;
-  if (goldenIndex < lastFiveStart) {
-    const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
-    [shuffled[goldenIndex], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[goldenIndex]];
-  }
-  const grubIndex = shuffled.findIndex(d => d.name === "Christopher L. Eisgruber");
-  const lastFiveStart = shuffled.length - 5;
-  if (grubIndex < lastFiveStart) {
-    const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
-    [shuffled[grubIndex], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[grubIndex]];
-
+  ['Andrew Golden', 'Christopher L. Eisgruber'].forEach(name => {
+    const idx = shuffled.findIndex(d => d.name === name);
+    if (idx < lastFiveStart) {
+      const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
+      [shuffled[idx], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[idx]];
+    }
+  });
 
   score = 0;
   usedNames = new Set();
