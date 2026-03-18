@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Higher or Lower: University Earnings</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f4ef;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #888;
+    --accent: #2d2d2d;
+    --divider: #e0dbd2;
+    --green: #2e7d5e;
+    --red: #b83a2c;
+    --green-bg: #eaf5f0;
+    --red-bg: #fdf0ee;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 2rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .score-bar span strong {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .game-area {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+  }
+
+  .card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    user-select: none;
+  }
+
+  .card:hover:not(.revealed):not(.locked) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+    border-color: #c8c2b8;
+  }
+
+  .card.resetting {
+    transition: none !important;
+  }
+
+  .card.locked { cursor: default; }
+
+  .card.correct {
+    border-color: var(--green);
+    background: var(--green-bg);
+  }
+
+  .card.wrong {
+    border-color: var(--red);
+    background: var(--red-bg);
+    animation: shake 0.4s ease forwards;
+  }
+
+  .card.revealed { cursor: default; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .card-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-top: -0.3rem;
+    min-height: 1em;
+  }
+
+  .card-value {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 400;
+    color: var(--text);
+    opacity: 0;
+    transition: opacity 0.4s ease 0.1s;
+  }
+
+  .card-value.show { opacity: 1; }
+
+  .card-unit {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: -0.4rem;
+    opacity: 0;
+    transition: opacity 0.4s ease 0.2s;
+  }
+
+  .card-unit.show { opacity: 1; }
+
+  .vs-divider {
+    width: 44px;
+    height: 44px;
+    background: var(--text);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    z-index: 2;
+    margin: 0 -22px;
+    position: relative;
+  }
+
+  .prompt-text {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.01em;
+    max-width: 480px;
+  }
+
+  .prompt-text em {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  .end-screen {
+    text-align: center;
+    max-width: 400px;
+    animation: fadeIn 0.5s ease;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .end-screen.visible { display: flex; }
+
+  .end-screen .big-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .end-screen .end-msg {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .restart-btn {
+    padding: 0.7rem 2.2rem;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    margin-top: 0.5rem;
+  }
+
+  .restart-btn:hover { opacity: 0.8; }
+
+  .main-game { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 680px; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card-swap { animation: swapIn 0.35s ease; }
+  @keyframes swapIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 680px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--divider);
+    transition: background 0.3s ease;
+  }
+
+  @media (max-width: 500px) {
+    .game-area { flex-direction: column; gap: 1rem; }
+    .vs-divider { margin: -22px 0; }
+    .card { min-height: 150px; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Higher or Lower: Top University Earnings</h1>
+<p class="subtitle">Think you can organize the top earners on Princeton's payroll in 2024?</p>
+
+<div class="main-game" id="mainGame">
+  <p class="prompt-text" id="promptText"></p>
+
+  <div class="score-bar">
+    <span>Streak <strong id="scoreDisplay">0</strong></span>
+    <span>Best <strong id="bestDisplay">0</strong></span>
+  </div>
+
+  <div class="game-area">
+    <div class="card" id="cardLeft" onclick="guess('left')">
+      <div class="card-label" id="leftLabel">Already known</div>
+      <div class="card-name" id="leftName"></div>
+      <div class="card-title" id="leftTitle"></div>
+      <div class="card-value" id="leftValue"></div>
+      <div class="card-unit" id="leftUnit"></div>
+    </div>
+    <div class="vs-divider">vs</div>
+    <div class="card" id="cardRight" onclick="guess('right')">
+      <div class="card-label" id="rightLabel">Click to guess</div>
+      <div class="card-name" id="rightName"></div>
+      <div class="card-title" id="rightTitle"></div>
+      <div class="card-value" id="rightValue"></div>
+      <div class="card-unit" id="rightUnit"></div>
+    </div>
+  </div>
+
+  <div class="progress-dots" id="progressDots"></div>
+</div>
+
+<div class="end-screen" id="endScreen">
+  <p style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Final score</p>
+  <div class="big-score" id="finalScore"></div>
+  <p class="end-msg" id="endMsg"></p>
+  <button class="restart-btn" onclick="restartGame()">Play Again</button>
+</div>
+
+<script>
+const DATA = [
+  { name: "Christopher L. Eisgruber", title: "President of Princeton University", value: 1523346, unit: "dollars", display: "1,523,346" },
+  { name: "Andrew Golden", title: "President of PRINCO", value: 14662060, unit: "dollars", display: "14,662,060" },
+  { name: "Catherine Callow-Wright", title: "Executive Vice President", value: 630059, unit: "dollars", display: "630,059" },
+  { name: "Chad Klaus", title: "VP for university services", value: 550794, unit: "dollars", display: "550,794" },
+  { name: "Gadi Dechter", title: "VP for communications and government affairs", value: 655577, unit: "dollars", display: "655,577" },
+  { name: "Hilary Parker", title: "Vice President and Secretary", value: 561040, unit: "dollars", display: "561,040" },
+  { name: "James Dominick", title: "VP for info. tech. and CIO", value: 664340, unit: "dollars", display: "664,340" },
+  { name: "James Matteo", title: "VP for finance and treasurer", value: 721854, unit: "dollars", display: "721,854" },
+  { name: "Jennifer Rexford", title: "Provost", value: 946958, unit: "dollars", display: "946,958" },
+  { name: "Kevin Heaney", title: "VP for advancement", value: 847178, unit: "dollars", display: "847,178" },
+  { name: "KyuJung Whang", title: "VP for facilities", value: 616945, unit: "dollars", display: "616,945" },
+  { name: "Nilufer Shroff", title: "VP and chief audit and compliance officer", value: 522354, unit: "dollars", display: "522,354" },
+  { name: "Ramona Romero", title: "VP and general counsel", value: 967614, unit: "dollars", display: "967,614" },
+  { name: "Romy Riddick", title: "VP for Human Resources", value: 531196, unit: "dollars", display: "531,196" },
+  { name: "W Rochelle Calhoun", title: "VP for campus life", value: 641804, unit: "dollars", display: "641,804" },
+  { name: "Gene Andrew Jarrett", title: "Dean of the Faculty", value: 825491, unit: "dollars", display: "825,491" },
+  { name: "Jill Dolan", title: "Dean of the College", value: 573088, unit: "dollars", display: "573,088" },
+  { name: "Pablo Debenedetti", title: "Dean for Research", value: 598020, unit: "dollars", display: "598,020" },
+  { name: "Peter Schiffer", title: "Dean for Research", value: 214546, unit: "dollars", display: "214,546" },
+  { name: "Rodney Priestley", title: "Dean of the Graduate School", value: 588002, unit: "dollars", display: "588,002" },
+  { name: "Edward Karns", title: "Managing director of PRINCO", value: 2482468, unit: "dollars", display: "2,482,468" },
+  { name: "Jennifer Birmingham", title: "Managing director of PRINCO", value: 2375438, unit: "dollars", display: "2,375,438" },
+  { name: "Jonathan Erickson", title: "Managing director of PRINCO", value: 3385143, unit: "dollars", display: "3,385,143" },
+  { name: "Susan Butler Ciniglio", title: "Managing director of PRINCO", value: 2100130, unit: "dollars", display: "2,100,130" },
+  { name: "Tae Kyoon Kim", title: "Managing director of PRINCO", value: 2604473, unit: "dollars", display: "2,604,473" },
+  { name: "Charlotte Treby Williams", title: "Former executive VP", value: 889305, unit: "dollars", display: "889,305" },
+  { name: "Deborah Prentice", title: "Former Provost", value: 263615, unit: "dollars", display: "263,615" },
+  { name: "Lianne Sullivan-Crowley", title: "Former VP for human resources, Emeritus", value: 274309, unit: "dollars", display: "274,309" },
+  { name: "Sanjeev Kulkarni", title: "Professor, Former Dean of the Faculty", value: 726363, unit: "dollars", display: "726,363" },
+  { name: "Sarah-Jane Leslie", title: "Professor, Former Dean of the Graduate School", value: 690658, unit: "dollars", display: "690,658" },
+];
+
+const PROMPT = "Who earns more?";
+
+let items = [null, null];
+let knownSide = null;
+let score = 0;
+let best = 0;
+let revealed = false;
+let isFirstTurn = true;
+let usedNames = new Set();
+let shuffled;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickUnused() {
+  for (let i = 0; i < shuffled.length; i++) {
+    if (!usedNames.has(shuffled[i].name)) return shuffled[i];
+  }
+  return null;
+}
+
+function animateCount(el, target, duration) {
+  const start = performance.now();
+  el.classList.add('show');
+  function frame(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(eased * target);
+    el.textContent = current.toLocaleString();
+    if (progress < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function revealCard(side, item, delay) {
+  const valEl = document.getElementById(side + 'Value');
+  const unitEl = document.getElementById(side + 'Unit');
+  valEl.textContent = '0';
+  unitEl.textContent = item.unit;
+  setTimeout(() => {
+    unitEl.classList.add('show');
+    animateCount(valEl, item.value, 700);
+  }, delay);
+}
+
+function startGame() {
+  shuffled = shuffle(DATA);
+
+  // Ensure Andrew Golden appears in the last 5 positions
+  const goldenIndex = shuffled.findIndex(d => d.name === "Andrew Golden");
+  const lastFiveStart = shuffled.length - 5;
+  if (goldenIndex < lastFiveStart) {
+    const targetIndex = lastFiveStart + Math.floor(Math.random() * 5);
+    [shuffled[goldenIndex], shuffled[targetIndex]] = [shuffled[targetIndex], shuffled[goldenIndex]];
+  }
+
+  score = 0;
+  usedNames = new Set();
+  revealed = false;
+  isFirstTurn = true;
+  knownSide = null;
+
+  document.getElementById('endScreen').classList.remove('visible');
+  document.getElementById('mainGame').style.display = 'flex';
+
+  items[0] = shuffled[0]; usedNames.add(items[0].name);
+  items[1] = shuffled[1]; usedNames.add(items[1].name);
+
+  updateScoreDisplay();
+  renderCards(false, null);
+  buildDots();
+  document.getElementById('promptText').innerHTML = `<em>${PROMPT}</em>`;
+}
+
+function buildDots() {
+  const container = document.getElementById('progressDots');
+  container.innerHTML = '';
+  for (let i = 0; i < DATA.length - 1; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = `dot-${i}`;
+    container.appendChild(d);
+  }
+}
+
+function renderCards(isSwap, swapSide) {
+  const leftCard = document.getElementById('cardLeft');
+  const rightCard = document.getElementById('cardRight');
+  const lv = document.getElementById('leftValue');
+  const lu = document.getElementById('leftUnit');
+  const rv = document.getElementById('rightValue');
+  const ru = document.getElementById('rightUnit');
+
+  // Force-reset any lingering transforms/hover states on both cards
+  leftCard.classList.add('resetting');
+  rightCard.classList.add('resetting');
+  requestAnimationFrame(() => {
+    leftCard.classList.remove('resetting');
+    rightCard.classList.remove('resetting');
+  });
+
+  lv.classList.remove('show'); lu.classList.remove('show');
+  rv.classList.remove('show'); ru.classList.remove('show');
+  lv.textContent = ''; rv.textContent = '';
+  lu.textContent = items[0].unit; ru.textContent = items[1].unit;
+
+  document.getElementById('leftName').textContent = items[0].name;
+  document.getElementById('leftTitle').textContent = items[0].title || '';
+  document.getElementById('rightName').textContent = items[1].name;
+  document.getElementById('rightTitle').textContent = items[1].title || '';
+
+  if (isFirstTurn) {
+    leftCard.className = 'card';
+    rightCard.className = 'card';
+    document.getElementById('leftLabel').textContent = 'Higher or Lower?';
+    document.getElementById('rightLabel').textContent = 'Higher or Lower?';
+  } else {
+    const unknownSide = knownSide === 'left' ? 'right' : 'left';
+    const knownCard = document.getElementById('card' + cap(knownSide));
+    const unknownCard = document.getElementById('card' + cap(unknownSide));
+    const knownEl = document.getElementById(knownSide + 'Value');
+    const knownUnitEl = document.getElementById(knownSide + 'Unit');
+
+    knownCard.className = 'card known';
+    unknownCard.className = 'card' + (isSwap ? ' card-swap' : '');
+
+    document.getElementById(knownSide + 'Label').textContent = 'Already revealed';
+    document.getElementById(unknownSide + 'Label').textContent = 'Higher or Lower?';
+
+    const knownItem = knownSide === 'left' ? items[0] : items[1];
+    knownUnitEl.textContent = knownItem.unit;
+    knownEl.textContent = knownItem.display;
+    knownEl.classList.add('show');
+    knownUnitEl.classList.add('show');
+  }
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function updateScoreDisplay() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('bestDisplay').textContent = best;
+}
+
+function guess(side) {
+  if (revealed) return;
+  revealed = true;
+
+  const guessedItem = side === 'left' ? items[0] : items[1];
+  const otherSide = side === 'left' ? 'right' : 'left';
+
+  const guessedCard = document.getElementById('card' + cap(side));
+  const otherCard = document.getElementById('card' + cap(otherSide));
+
+  if (isFirstTurn) {
+    revealCard('left', items[0], 0);
+    revealCard('right', items[1], 100);
+
+    guessedCard.className = 'card locked revealed correct';
+    otherCard.className = 'card locked revealed';
+
+    isFirstTurn = false;
+    knownSide = side;
+    score++;
+    if (score > best) best = score;
+    updateScoreDisplay();
+    markDot(score - 1, true);
+
+    setTimeout(() => {
+      const next = pickUnused();
+      if (!next) { endGame(true); return; }
+      items[otherSide === 'left' ? 0 : 1] = next;
+      usedNames.add(next.name);
+      revealed = false;
+      renderCards(true, otherSide);
+    }, 3000);
+  }
+
+  // Always reveal the clicked card with count animation
+  revealCard(side, guessedItem, 0);
+  // Also reveal the other card statically if it wasn't already showing (i.e. it's the unknown card)
+  if (side !== knownSide) {
+    // other card is the known one — already showing, nothing to do
+  } else {
+    // clicked the known card — reveal the unknown card too
+    const otherItem = otherSide === 'left' ? items[0] : items[1];
+    revealCard(otherSide, otherItem, 0);
+  }
+
+  const knownItem = knownSide === 'left' ? items[0] : items[1];
+  const newSide = knownSide === 'left' ? 'right' : 'left';
+
+  const correct = guessedItem.value >= (side === knownSide ? (items[newSide === 'left' ? 0 : 1]).value : knownItem.value);
+
+  guessedCard.className = 'card locked revealed ' + (correct ? 'correct' : 'wrong');
+  otherCard.className = 'card locked revealed ' + (correct ? '' : 'wrong');
+
+  if (correct) {
+    score++;
+    if (score > best) best = score;
+    updateScoreDisplay();
+    markDot(score - 1, true);
+    knownSide = side; // clicked card becomes the new anchor
+
+    setTimeout(() => {
+      const next = pickUnused();
+      if (!next) { endGame(true); return; }
+      // Always replace the card that was NOT clicked
+      items[otherSide === 'left' ? 0 : 1] = next;
+      usedNames.add(next.name);
+      revealed = false;
+      renderCards(true, otherSide);
+    }, 3000);
+  } else {
+    markDot(score, false);
+    setTimeout(() => endGame(false), 3000);
+  }
+}
+
+function markDot(index, success) {
+  const d = document.getElementById(`dot-${index}`);
+  if (d) d.style.background = success ? '#2e7d5e' : '#b83a2c';
+}
+
+function endGame(won) {
+  document.getElementById('mainGame').style.display = 'none';
+  document.getElementById('endScreen').classList.add('visible');
+  document.getElementById('finalScore').textContent = score;
+
+  let msg = '';
+  if (won) msg = "You cleared every option — flawless! 🎉";
+  else if (score === 0) msg = "Unlucky start. Give it another go!";
+  else if (score < 5) msg = "Not bad. Can you beat that streak?";
+  else if (score < 12) msg = "Solid run! Think you can go further?";
+  else if (score < 20) msg = "Impressive — you clearly know your Princeton salaries.";
+  else msg = "Extraordinary streak. Almost a clean sweep!";
+
+  document.getElementById('endMsg').textContent = msg;
+}
+
+function restartGame() {
+  startGame();
+}
+
+startGame();
+</script>
+</body>
+</html>
